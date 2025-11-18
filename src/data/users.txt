@@ -1,0 +1,3 @@
+# Library Users Data
+# Format: UserID,Username,PasswordHash,FullName,Email,Phone,Active,BorrowedISBNs
+U001,hello,2568952812819866294,hello,meow@gmail.com,123456789,1,
