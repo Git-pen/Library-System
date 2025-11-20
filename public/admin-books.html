@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Books - Admin</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="container flex-between">
+            <div class="navbar-brand">📚 Library System - Admin</div>
+            <ul class="navbar-nav">
+                <li><a href="/admin-dashboard.html">Dashboard</a></li>
+                <li><a href="/admin-books.html" class="text-primary">Books</a></li>
+                <li><a href="/admin-users.html">Users</a></li>
+                <li><a href="/admin-transactions.html">Transactions</a></li>
+                <li><a href="#" onclick="logout()" class="text-error">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="page-wrapper">
+        <div class="container">
+            <div class="flex-between mb-lg">
+                <div>
+                    <h1>📚 Book Management</h1>
+                    <p class="text-muted">Add, edit, and manage library books</p>
+                </div>
+                <button class="btn btn-success" onclick="showAddBookModal()">+ Add New Book</button>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <div id="books-table-container">
+                        <p class="text-muted">Loading books...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/utils.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/api.js"></script>
+    <script>
+        requireAdmin();
+
+        async function loadBooks() {
+            try {
+                const result = await BooksAPI.getAll();
+                if (result.success) {
+                    displayBooks(result.books);
+                }
+            } catch (error) {
+                handleApiError(error);
+            }
+        }
+
+        function displayBooks(books) {
+            const container = document.getElementById('books-table-container');
+
+            if (books.length === 0) {
+                container.innerHTML = '<p class="text-muted">No books in the system</p>';
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>ISBN</th>
+                                <th>Title</th>
+                                <th>Author</th>
+                                <th>Quantity</th>
+                                <th>Available</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${books.map(book => `
+                                <tr>
+                                    <td><code>${escapeHtml(book.isbn)}</code></td>
+                                    <td>${escapeHtml(book.title)}</td>
+                                    <td>${escapeHtml(book.author)}</td>
+                                    <td>${book.quantity}</td>
+                                    <td>
+                                        <span class="badge ${book.availableCopies > 0 ? 'badge-success' : 'badge-danger'}">
+                                            ${book.availableCopies}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-primary btn-sm" onclick='editBook(${JSON.stringify(book)})'>Edit</button>
+                                        <button class="btn btn-danger btn-sm" onclick="deleteBook('${escapeHtml(book.isbn)}')">Delete</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function showAddBookModal() {
+            const modal = createModal('Add New Book', `
+                <form id="add-book-form">
+                    <div class="form-group">
+                        <label class="form-label">ISBN</label>
+                        <input type="text" id="isbn" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Title</label>
+                        <input type="text" id="title" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Author</label>
+                        <input type="text" id="author" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Quantity</label>
+                        <input type="number" id="quantity" class="form-input" required min="1">
+                    </div>
+                </form>
+            `, [
+                { text: 'Cancel', class: 'btn-outline', onclick: 'this.closest(".modal-overlay").remove()' },
+                { text: 'Add Book', class: 'btn-success', onclick: 'submitAddBook()' }
+            ]);
+        }
+
+        async function submitAddBook() {
+            const isbn = document.getElementById('isbn').value;
+            const title = document.getElementById('title').value;
+            const author = document.getElementById('author').value;
+            const quantity = document.getElementById('quantity').value;
+
+            showLoading();
+
+            try {
+                const result = await BooksAPI.add(isbn, title, author, quantity);
+                hideLoading();
+
+                if (result.success) {
+                    showToast('Book added successfully!', 'success');
+                    document.querySelector('.modal-overlay').remove();
+                    loadBooks();
+                } else {
+                    showToast(result.message || 'Failed to add book', 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                handleApiError(error);
+            }
+        }
+
+        function editBook(book) {
+            const modal = createModal('Edit Book', `
+                <form id="edit-book-form">
+                    <div class="form-group">
+                        <label class="form-label">ISBN (Cannot be changed)</label>
+                        <input type="text" class="form-input" value="${escapeHtml(book.isbn)}" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Title</label>
+                        <input type="text" id="edit-title" class="form-input" value="${escapeHtml(book.title)}" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Author</label>
+                        <input type="text" id="edit-author" class="form-input" value="${escapeHtml(book.author)}" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Quantity</label>
+                        <input type="number" id="edit-quantity" class="form-input" value="${book.quantity}" required min="${book.quantity - book.availableCopies}">
+                        <div class="form-help">Currently borrowed: ${book.quantity - book.availableCopies}</div>
+                    </div>
+                </form>
+            `, [
+                { text: 'Cancel', class: 'btn-outline', onclick: 'this.closest(".modal-overlay").remove()' },
+                { text: 'Update', class: 'btn-primary', onclick: `submitEditBook('${book.isbn}', ${book.quantity})` }
+            ]);
+        }
+
+        async function submitEditBook(isbn, oldQuantity) {
+            const title = document.getElementById('edit-title').value;
+            const author = document.getElementById('edit-author').value;
+            const quantity = parseInt(document.getElementById('edit-quantity').value);
+
+            showLoading();
+
+            try {
+                // Update details
+                await BooksAPI.update(isbn, title, author);
+
+                // Update quantity if changed
+                if (quantity !== oldQuantity) {
+                    await BooksAPI.updateQuantity(isbn, quantity);
+                }
+
+                hideLoading();
+                showToast('Book updated successfully!', 'success');
+                document.querySelector('.modal-overlay').remove();
+                loadBooks();
+            } catch (error) {
+                hideLoading();
+                handleApiError(error);
+            }
+        }
+
+        async function deleteBook(isbn) {
+            if (!confirmAction('Are you sure you want to delete this book? This action cannot be undone.')) {
+                return;
+            }
+
+            showLoading();
+
+            try {
+                const result = await BooksAPI.delete(isbn);
+                hideLoading();
+
+                if (result.success) {
+                    showToast('Book deleted successfully!', 'success');
+                    loadBooks();
+                } else {
+                    showToast(result.message || 'Failed to delete book', 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                handleApiError(error);
+            }
+        }
+
+        loadBooks();
+    </script>
+</body>
+
+</html>

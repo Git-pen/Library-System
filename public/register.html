@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Library Management System</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="page-wrapper flex-center">
+        <div class="container-sm">
+            <div class="card fade-in">
+                <div class="card-header text-center">
+                    <h2 class="card-title">📝 Create New Account</h2>
+                    <p class="text-muted">Join our library community</p>
+                </div>
+
+                <div class="card-body">
+                    <form id="register-form">
+                        <div class="form-group">
+                            <label class="form-label">Username</label>
+                            <input type="text" id="username" class="form-input" required minlength="3">
+                            <div id="username-feedback" class="form-help"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Full Name</label>
+                            <input type="text" id="fullName" class="form-input" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Email</label>
+                            <input type="email" id="email" class="form-input" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Phone Number</label>
+                            <input type="tel" id="phone" class="form-input" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Password</label>
+                            <input type="password" id="password" class="form-input" required minlength="6">
+                            <div class="form-help">Minimum 6 characters</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Confirm Password</label>
+                            <input type="password" id="confirmPassword" class="form-input" required>
+                            <div id="password-feedback" class="form-error"></div>
+                        </div>
+
+                        <button type="submit" class="btn btn-success btn-block btn-lg">
+                            Register
+                        </button>
+                    </form>
+                </div>
+
+                <div class="card-footer text-center">
+                    <p class="text-muted">
+                        Already have an account?
+                        <a href="/login.html?type=user">Login here</a>
+                    </p>
+                    <p class="text-muted mt-sm">
+                        <a href="/index.html">← Back to Home</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/utils.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/api.js"></script>
+    <script>
+        const usernameInput = document.getElementById('username');
+        const usernameFeedback = document.getElementById('username-feedback');
+        const passwordInput = document.getElementById('password');
+        const confirmPasswordInput = document.getElementById('confirmPassword');
+        const passwordFeedback = document.getElementById('password-feedback');
+        const registerForm = document.getElementById('register-form');
+
+        // Check username availability
+        const checkUsername = debounce(async (username) => {
+            if (username.length < 3) return;
+
+            try {
+                const result = await AuthAPI.checkUsername(username);
+                if (result.available) {
+                    usernameFeedback.textContent = '✓ Username available';
+                    usernameFeedback.className = 'form-help text-success';
+                } else {
+                    usernameFeedback.textContent = '✗ Username already taken';
+                    usernameFeedback.className = 'form-error';
+                }
+            } catch (error) {
+                console.error('Error checking username:', error);
+            }
+        }, 500);
+
+        usernameInput.addEventListener('input', (e) => {
+            checkUsername(e.target.value);
+        });
+
+        // Validate password match
+        confirmPasswordInput.addEventListener('input', () => {
+            if (confirmPasswordInput.value && passwordInput.value !== confirmPasswordInput.value) {
+                passwordFeedback.textContent = 'Passwords do not match';
+            } else {
+                passwordFeedback.textContent = '';
+            }
+        });
+
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const fullName = document.getElementById('fullName').value;
+            const email = document.getElementById('email').value;
+            const phone = document.getElementById('phone').value;
+            const password = passwordInput.value;
+            const confirmPassword = confirmPasswordInput.value;
+
+            // Validate
+            if (password !== confirmPassword) {
+                showToast('Passwords do not match', 'error');
+                return;
+            }
+
+            if (!isValidEmail(email)) {
+                showToast('Invalid email format', 'error');
+                return;
+            }
+
+            if (!isValidPassword(password)) {
+                showToast('Password must be at least 6 characters', 'error');
+                return;
+            }
+
+            showLoading();
+
+            try {
+                const result = await AuthAPI.register(username, password, fullName, email, phone);
+                hideLoading();
+
+                if (result.success) {
+                    showToast('Registration successful! Please login.', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/login.html?type=user';
+                    }, 1500);
+                } else {
+                    showToast(result.message || 'Registration failed', 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                handleApiError(error);
+            }
+        });
+
+        // Redirect if already logged in
+        if (isLoggedIn()) {
+            const user = getCurrentUser();
+            if (user.role === 'admin') {
+                window.location.href = '/admin-dashboard.html';
+            } else {
+                window.location.href = '/user-dashboard.html';
+            }
+        }
+    </script>
+</body>
+
+</html>

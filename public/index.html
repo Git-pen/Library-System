@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Management System</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="page-wrapper flex-center">
+        <div class="container-sm">
+            <div class="text-center mb-lg fade-in">
+                <h1 style="font-size: 3rem; margin-bottom: 1rem;">
+                    📚 Library Management System
+                </h1>
+                <p style="font-size: 1.25rem; color: var(--text-muted);">
+                    Welcome to your digital library
+                </p>
+            </div>
+
+            <div class="grid grid-2 gap-md">
+                <div class="card slide-in" style="animation-delay: 0.1s;">
+                    <div class="card-header">
+                        <h3 class="card-title">👨‍💼 Admin Login</h3>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-md">Access the administrative dashboard to manage books, users, and transactions.</p>
+                        <a href="/login.html?type=admin" class="btn btn-primary btn-block">
+                            Login as Admin
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card slide-in" style="animation-delay: 0.2s;">
+                    <div class="card-header">
+                        <h3 class="card-title">👤 User Login</h3>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-md">Browse books, manage your borrowed items, and explore the library collection.</p>
+                        <a href="/login.html?type=user" class="btn btn-secondary btn-block">
+                            Login as User
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-lg fade-in" style="animation-delay: 0.3s;">
+                <div class="card-body text-center">
+                    <p class="mb-sm">Don't have an account?</p>
+                    <a href="/register.html" class="btn btn-outline">
+                        Register New Account
+                    </a>
+                </div>
+            </div>
+
+            <div class="text-center mt-lg" style="color: var(--text-muted); font-size: 0.875rem;">
+                <p>© 2024 Library Management System. All rights reserved.</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/auth.js"></script>
+    <script>
+        // Redirect if already logged in
+        if (isLoggedIn()) {
+            const user = getCurrentUser();
+            if (user.role === 'admin') {
+                window.location.href = '/admin-dashboard.html';
+            } else {
+                window.location.href = '/user-dashboard.html';
+            }
+        }
+    </script>
+</body>
+</html>

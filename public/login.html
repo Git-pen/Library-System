@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Library Management System</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="page-wrapper flex-center">
+        <div class="container-sm">
+            <div class="card fade-in">
+                <div class="card-header text-center">
+                    <h2 class="card-title" id="login-title">🔐 Admin Login</h2>
+                    <p class="text-muted">Enter your credentials to continue</p>
+                </div>
+
+                <div class="card-body">
+                    <form id="login-form">
+                        <div class="form-group">
+                            <label class="form-label">Username</label>
+                            <input type="text" id="username" class="form-input" required autocomplete="username">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Password</label>
+                            <input type="password" id="password" class="form-input" required
+                                autocomplete="current-password">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-block btn-lg">
+                            Login
+                        </button>
+                    </form>
+
+                    <div class="mt-md text-center">
+                        <button id="toggle-type" class="btn btn-outline btn-sm">
+                            Switch to User Login
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card-footer text-center">
+                    <p class="text-muted">
+                        Don't have an account?
+                        <a href="/register.html">Register here</a>
+                    </p>
+                    <p class="text-muted mt-sm">
+                        <a href="/index.html">← Back to Home</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/utils.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/api.js"></script>
+    <script>
+        // Get login type from URL or default to admin
+        const urlParams = new URLSearchParams(window.location.search);
+        let loginType = urlParams.get('type') || 'admin';
+
+        const loginTitle = document.getElementById('login-title');
+        const toggleBtn = document.getElementById('toggle-type');
+        const loginForm = document.getElementById('login-form');
+
+        function updateLoginType() {
+            if (loginType === 'admin') {
+                loginTitle.innerHTML = '🔐 Admin Login';
+                toggleBtn.textContent = 'Switch to User Login';
+            } else {
+                loginTitle.innerHTML = '👤 User Login';
+                toggleBtn.textContent = 'Switch to Admin Login';
+            }
+        }
+
+        toggleBtn.addEventListener('click', () => {
+            loginType = loginType === 'admin' ? 'user' : 'admin';
+            updateLoginType();
+        });
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            showLoading();
+
+            try {
+                let result;
+                if (loginType === 'admin') {
+                    result = await AuthAPI.loginAdmin(username, password);
+                } else {
+                    result = await AuthAPI.loginUser(username, password);
+                }
+
+                hideLoading();
+
+                if (result.success) {
+                    showToast('Login successful!', 'success');
+                    setTimeout(() => {
+                        if (loginType === 'admin') {
+                            window.location.href = '/admin-dashboard.html';
+                        } else {
+                            window.location.href = '/user-dashboard.html';
+                        }
+                    }, 500);
+                } else {
+                    showToast(result.message || 'Login failed', 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                handleApiError(error);
+            }
+        });
+
+        updateLoginType();
+
+        // Redirect if already logged in
+        if (isLoggedIn()) {
+            const user = getCurrentUser();
+            if (user.role === 'admin') {
+                window.location.href = '/admin-dashboard.html';
+            } else {
+                window.location.href = '/user-dashboard.html';
+            }
+        }
+    </script>
+</body>
+
+</html>

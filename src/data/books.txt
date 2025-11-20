@@ -1,13 +1,2 @@
-# Library Books Data
-# Format: ISBN,Title,Author,Quantity,AvailableCopies
-123-456-789,The Book Thief,Ray,6,6
-978-0-13-110362-7,The C Programming Language,Brian Kernighan,5,5
-978-0-13-468599-1,The C++ Programming Language,Bjarne Stroustrup,5,5
-978-0-134-68599-4,Clean Code,Robert Martin,4,4
-978-0-201-35088-5,Data Structures and Algorithms,Alfred Aho,3,3
-978-0-201-63361-0,Design Patterns,Gang of Four,2,2
-978-0-201-89683-1,The Art of Computer Programming Vol 1,Donald Knuth,2,2
-978-0-262-03384-8,Introduction to Algorithms,Thomas Cormen,4,4
-978-0-321-56384-2,Effective C++,Scott Meyers,3,3
-978-0-596-00927-5,Head First Design Patterns,Eric Freeman,3,3
-978-0-672-32692-7,Data Structures Using C++,D.S. Malik,4,4
+1,Atomic Habits,James Clear,9,8
+523,Book Thief,Ray,9,7

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard - Library Management System</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="container flex-between">
+            <div class="navbar-brand">📚 Library System</div>
+            <ul class="navbar-nav">
+                <li><a href="/user-dashboard.html">Dashboard</a></li>
+                <li><a href="/browse-books.html">Browse Books</a></li>
+                <li><a href="/search-books.html">Search</a></li>
+                <li><a href="/my-books.html">My Books</a></li>
+                <li><a href="#" onclick="logout()" class="text-error">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="page-wrapper">
+        <div class="container">
+            <div class="mb-lg fade-in">
+                <h1>Welcome, <span id="user-name">User</span>! 👋</h1>
+                <p class="text-muted">Manage your library activities from your dashboard</p>
+            </div>
+
+            <div class="grid grid-3 gap-md mb-lg">
+                <div class="stat-card fade-in"
+                    style="animation-delay: 0.1s; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);">
+                    <div class="stat-value" id="borrowed-count">0</div>
+                    <div class="stat-label">Books Borrowed</div>
+                </div>
+
+                <div class="stat-card fade-in"
+                    style="animation-delay: 0.2s; background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                    <div class="stat-value" id="available-count">0</div>
+                    <div class="stat-label">Books Available</div>
+                </div>
+
+                <div class="stat-card fade-in"
+                    style="animation-delay: 0.3s; background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);">
+                    <div class="stat-value">5</div>
+                    <div class="stat-label">Borrow Limit</div>
+                </div>
+            </div>
+
+            <div class="grid grid-2 gap-md">
+                <div class="card fade-in" style="animation-delay: 0.4s;">
+                    <div class="card-header">
+                        <h3 class="card-title">📚 Quick Actions</h3>
+                    </div>
+                    <div class="card-body flex-column gap-sm">
+                        <a href="/browse-books.html" class="btn btn-primary btn-block">Browse All Books</a>
+                        <a href="/search-books.html" class="btn btn-secondary btn-block">Search Books</a>
+                        <a href="/my-books.html" class="btn btn-success btn-block">View My Books</a>
+                    </div>
+                </div>
+
+                <div class="card fade-in" style="animation-delay: 0.5s;">
+                    <div class="card-header">
+                        <h3 class="card-title">📊 My Activity</h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="recent-activity">
+                            <p class="text-muted">Loading recent activity...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/utils.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/api.js"></script>
+    <script>
+        requireUser();
+
+        const user = getCurrentUser();
+        document.getElementById('user-name').textContent = user.fullName;
+
+        async function loadDashboard() {
+            try {
+                // Load borrowed books count
+                const myBooksResult = await UsersAPI.getMyBooks();
+                if (myBooksResult.success) {
+                    document.getElementById('borrowed-count').textContent = myBooksResult.books.length;
+                }
+
+                // Load available books count
+                const booksResult = await BooksAPI.getAll(true);
+                if (booksResult.success) {
+                    document.getElementById('available-count').textContent = booksResult.books.length;
+                }
+
+                // Load recent transactions
+                const transResult = await TransactionsAPI.getMy();
+                if (transResult.success) {
+                    displayRecentActivity(transResult.transactions.slice(0, 5));
+                }
+            } catch (error) {
+                handleApiError(error);
+            }
+        }
+
+        function displayRecentActivity(transactions) {
+            const container = document.getElementById('recent-activity');
+
+            if (transactions.length === 0) {
+                container.innerHTML = '<p class="text-muted">No recent activity</p>';
+                return;
+            }
+
+            container.innerHTML = transactions.map(trans => `
+                <div style="padding: 0.5rem 0; border-bottom: 1px solid var(--border-color);">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <span class="badge ${trans.type === 'BORROW' ? 'badge-primary' : 'badge-success'}">
+                                ${trans.type}
+                            </span>
+                            <span style="margin-left: 0.5rem;">${escapeHtml(trans.bookTitle)}</span>
+                        </div>
+                        <div class="text-muted" style="font-size: 0.875rem;">
+                            ${formatDate(trans.timestamp)}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        loadDashboard();
+    </script>
+</body>
+
+</html>

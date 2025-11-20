@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transactions - Admin</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="container flex-between">
+            <div class="navbar-brand">📚 Library System - Admin</div>
+            <ul class="navbar-nav">
+                <li><a href="/admin-dashboard.html">Dashboard</a></li>
+                <li><a href="/admin-books.html">Books</a></li>
+                <li><a href="/admin-users.html">Users</a></li>
+                <li><a href="/admin-transactions.html" class="text-primary">Transactions</a></li>
+                <li><a href="#" onclick="logout()" class="text-error">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="page-wrapper">
+        <div class="container">
+            <div class="mb-lg">
+                <h1>📋 Transaction History</h1>
+                <p class="text-muted">View all library transactions</p>
+            </div>
+
+            <div class="card mb-md">
+                <div class="card-body">
+                    <div class="grid grid-3 gap-md">
+                        <div class="form-group">
+                            <label class="form-label">Filter by Type</label>
+                            <select id="filter-type" class="form-select" onchange="applyFilters()">
+                                <option value="all">All Transactions</option>
+                                <option value="BORROW">Borrow Only</option>
+                                <option value="RETURN">Return Only</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Search User</label>
+                            <input type="text" id="search-user" class="form-input" placeholder="Enter user name..."
+                                oninput="applyFilters()">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Search Book</label>
+                            <input type="text" id="search-book" class="form-input" placeholder="Enter book title..."
+                                oninput="applyFilters()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <div id="transactions-table-container">
+                        <p class="text-muted">Loading transactions...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/utils.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/api.js"></script>
+    <script>
+        requireAdmin();
+
+        let allTransactions = [];
+
+        async function loadTransactions() {
+            try {
+                const result = await TransactionsAPI.getAll();
+                if (result.success) {
+                    allTransactions = result.transactions.reverse(); // Most recent first
+                    applyFilters();
+                }
+            } catch (error) {
+                handleApiError(error);
+            }
+        }
+
+        function applyFilters() {
+            const filterType = document.getElementById('filter-type').value;
+            const searchUser = document.getElementById('search-user').value.toLowerCase();
+            const searchBook = document.getElementById('search-book').value.toLowerCase();
+
+            let filtered = allTransactions;
+
+            // Filter by type
+            if (filterType !== 'all') {
+                filtered = filtered.filter(t => t.type === filterType);
+            }
+
+            // Filter by user
+            if (searchUser) {
+                filtered = filtered.filter(t => t.userName.toLowerCase().includes(searchUser));
+            }
+
+            // Filter by book
+            if (searchBook) {
+                filtered = filtered.filter(t => t.bookTitle.toLowerCase().includes(searchBook));
+            }
+
+            displayTransactions(filtered);
+        }
+
+        function displayTransactions(transactions) {
+            const container = document.getElementById('transactions-table-container');
+
+            if (transactions.length === 0) {
+                container.innerHTML = '<p class="text-muted">No transactions found</p>';
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Transaction ID</th>
+                                <th>Type</th>
+                                <th>User</th>
+                                <th>Book</th>
+                                <th>Date & Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${transactions.map(trans => `
+                                <tr>
+                                    <td><code>${escapeHtml(trans.transactionID)}</code></td>
+                                    <td>
+                                        <span class="badge ${trans.type === 'BORROW' ? 'badge-primary' : 'badge-success'}">
+                                            ${trans.type}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        ${escapeHtml(trans.userName)}
+                                        <br>
+                                        <small class="text-muted">${escapeHtml(trans.userID)}</small>
+                                    </td>
+                                    <td>
+                                        ${escapeHtml(trans.bookTitle)}
+                                        <br>
+                                        <small class="text-muted">${escapeHtml(trans.isbn)}</small>
+                                    </td>
+                                    <td>${formatDate(trans.timestamp)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-md text-muted">
+                    Showing ${transactions.length} transaction(s)
+                </div>
+            `;
+        }
+
+        loadTransactions();
+    </script>
+</body>
+
+</html>

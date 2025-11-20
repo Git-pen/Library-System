@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Books - Library Management System</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="container flex-between">
+            <div class="navbar-brand">📚 Library System</div>
+            <ul class="navbar-nav">
+                <li><a href="/user-dashboard.html">Dashboard</a></li>
+                <li><a href="/browse-books.html">Browse Books</a></li>
+                <li><a href="/search-books.html">Search</a></li>
+                <li><a href="/my-books.html" class="text-primary">My Books</a></li>
+                <li><a href="#" onclick="logout()" class="text-error">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="page-wrapper">
+        <div class="container">
+            <div class="mb-lg">
+                <h1>📖 My Borrowed Books</h1>
+                <p class="text-muted">Manage your currently borrowed books</p>
+            </div>
+
+            <div id="books-container" class="grid grid-3 gap-md mb-lg">
+                <p class="text-muted">Loading your books...</p>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">📋 My Transaction History</h3>
+                </div>
+                <div class="card-body">
+                    <div id="transactions-container">
+                        <p class="text-muted">Loading transactions...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/utils.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/api.js"></script>
+    <script>
+        requireUser();
+
+        async function loadMyBooks() {
+            try {
+                const result = await UsersAPI.getMyBooks();
+
+                if (result.success) {
+                    displayBooks(result.books);
+                } else {
+                    showToast('Failed to load books', 'error');
+                }
+            } catch (error) {
+                handleApiError(error);
+            }
+        }
+
+        async function loadTransactions() {
+            try {
+                const result = await TransactionsAPI.getMy();
+
+                if (result.success) {
+                    displayTransactions(result.transactions);
+                } else {
+                    showToast('Failed to load transactions', 'error');
+                }
+            } catch (error) {
+                handleApiError(error);
+            }
+        }
+
+        function displayBooks(books) {
+            const container = document.getElementById('books-container');
+
+            if (books.length === 0) {
+                container.innerHTML = '<p class="text-muted">You have not borrowed any books yet</p>';
+                return;
+            }
+
+            container.innerHTML = books.map(book => `
+                <div class="book-card card fade-in">
+                    <div class="book-cover">📖</div>
+                    <div class="book-title">${escapeHtml(book.title)}</div>
+                    <div class="book-author">by ${escapeHtml(book.author)}</div>
+                    <div class="book-isbn">ISBN: ${escapeHtml(book.isbn)}</div>
+                    <div class="badge badge-primary mt-sm">Currently Borrowed</div>
+                    <button class="btn btn-danger btn-block mt-sm" onclick="returnBook('${escapeHtml(book.isbn)}')">
+                        Return Book
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function displayTransactions(transactions) {
+            const container = document.getElementById('transactions-container');
+
+            if (transactions.length === 0) {
+                container.innerHTML = '<p class="text-muted">No transactions yet</p>';
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Book</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${transactions.map(trans => `
+                                <tr>
+                                    <td>
+                                        <span class="badge ${trans.type === 'BORROW' ? 'badge-primary' : 'badge-success'}">
+                                            ${trans.type}
+                                        </span>
+                                    </td>
+                                    <td>${escapeHtml(trans.bookTitle)}</td>
+                                    <td>${formatDate(trans.timestamp)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        async function returnBook(isbn) {
+            if (!confirmAction('Do you want to return this book?')) {
+                return;
+            }
+
+            showLoading();
+
+            try {
+                const result = await BooksAPI.return(isbn);
+                hideLoading();
+
+                if (result.success) {
+                    showToast('Book returned successfully!', 'success');
+                    loadMyBooks();
+                    loadTransactions();
+                } else {
+                    showToast(result.message || 'Failed to return book', 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                handleApiError(error);
+            }
+        }
+
+        loadMyBooks();
+        loadTransactions();
+    </script>
+</body>
+
+</html>

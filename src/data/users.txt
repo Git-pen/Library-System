@@ -1,3 +1,2 @@
-# Library Users Data
-# Format: UserID,Username,PasswordHash,FullName,Email,Phone,Active,BorrowedISBNs
-U001,hello,2568952812819866294,hello,meow@gmail.com,123456789,1,
+USR0001,Aashir,$2a$10$7SlcnmhN5uVys0SXXNJBIO3J4y4uiWyKmKmdc5hDeHp.f0T4/COT2,Aashir Aslam,aashir@gmail.com,03055472277,1;523,1
+USR0002,cally,$2a$10$NqjsGwKgtJkfLfCxmrLId.DKQX3yMD.JFSfjzgPNRxiqzqSkt1FjS,Cal,cal@gmail.com,0325145789,523,1

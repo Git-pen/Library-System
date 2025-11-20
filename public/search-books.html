@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Books - Library Management System</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="container flex-between">
+            <div class="navbar-brand">📚 Library System</div>
+            <ul class="navbar-nav">
+                <li><a href="/user-dashboard.html">Dashboard</a></li>
+                <li><a href="/browse-books.html">Browse Books</a></li>
+                <li><a href="/search-books.html" class="text-primary">Search</a></li>
+                <li><a href="/my-books.html">My Books</a></li>
+                <li><a href="#" onclick="logout()" class="text-error">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="page-wrapper">
+        <div class="container">
+            <div class="mb-lg">
+                <h1>🔍 Search Books</h1>
+                <p class="text-muted">Find books by title, author, or keyword</p>
+            </div>
+
+            <div class="card mb-lg">
+                <div class="card-body">
+                    <div class="grid grid-2 gap-md">
+                        <div class="form-group">
+                            <label class="form-label">Search Query</label>
+                            <input type="text" id="search-query" class="form-input"
+                                placeholder="Enter title, author, or keyword...">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Search Type</label>
+                            <select id="search-type" class="form-select">
+                                <option value="keyword">Keyword (All Fields)</option>
+                                <option value="title">Title</option>
+                                <option value="author">Author</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="searchBooks()">Search</button>
+                </div>
+            </div>
+
+            <div id="results-container" class="grid grid-3 gap-md">
+                <p class="text-muted">Enter a search query to find books</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/utils.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/api.js"></script>
+    <script>
+        requireUser();
+
+        const searchQuery = document.getElementById('search-query');
+        const searchType = document.getElementById('search-type');
+
+        // Search on Enter key
+        searchQuery.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                searchBooks();
+            }
+        });
+
+        async function searchBooks() {
+            const query = searchQuery.value.trim();
+            const type = searchType.value;
+
+            if (!query) {
+                showToast('Please enter a search query', 'error');
+                return;
+            }
+
+            showLoading();
+
+            try {
+                let result;
+                if (type === 'title') {
+                    result = await SearchAPI.title(query);
+                } else if (type === 'author') {
+                    result = await SearchAPI.author(query);
+                } else {
+                    result = await SearchAPI.keyword(query);
+                }
+
+                hideLoading();
+
+                if (result.success) {
+                    displayResults(result.results);
+                } else {
+                    showToast('Search failed', 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                handleApiError(error);
+            }
+        }
+
+        function displayResults(books) {
+            const container = document.getElementById('results-container');
+
+            if (books.length === 0) {
+                container.innerHTML = '<p class="text-muted">No books found matching your search</p>';
+                return;
+            }
+
+            container.innerHTML = books.map(book => `
+                <div class="book-card card fade-in">
+                    <div class="book-cover">📖</div>
+                    <div class="book-title">${escapeHtml(book.title)}</div>
+                    <div class="book-author">by ${escapeHtml(book.author)}</div>
+                    <div class="book-isbn">ISBN: ${escapeHtml(book.isbn)}</div>
+                    <div class="availability ${book.availableCopies > 0 ? 'available' : 'unavailable'}">
+                        ${book.availableCopies} / ${book.quantity} available
+                    </div>
+                    ${book.availableCopies > 0 ? `
+                        <button class="btn btn-success btn-block mt-sm" onclick="borrowBook('${escapeHtml(book.isbn)}')">
+                            Borrow Book
+                        </button>
+                    ` : `
+                        <button class="btn btn-secondary btn-block mt-sm" disabled>
+                            Not Available
+                        </button>
+                    `}
+                </div>
+            `).join('');
+        }
+
+        async function borrowBook(isbn) {
+            if (!confirmAction('Do you want to borrow this book?')) {
+                return;
+            }
+
+            showLoading();
+
+            try {
+                const result = await BooksAPI.borrow(isbn);
+                hideLoading();
+
+                if (result.success) {
+                    showToast('Book borrowed successfully!', 'success');
+                    searchBooks(); // Re-run search
+                } else {
+                    showToast(result.message || 'Failed to borrow book', 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                handleApiError(error);
+            }
+        }
+    </script>
+</body>
+
+</html>
