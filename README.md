@@ -52,7 +52,7 @@ A modern web-based Library Management System with Node.js backend and vanilla HT
 
 1. **Navigate to project directory**
    ```powershell
-   cd e:\OEL_Ameer\Library-System
+   cd e:\your-folder\Library-System
    ```
 
 2. **Install dependencies**
@@ -66,7 +66,8 @@ A modern web-based Library Management System with Node.js backend and vanilla HT
    ```
 
 4. **Access the application**
-   - Open your browser and go to: `http://localhost:3000`
+   - Open your browser and go to: `http://localhost:3003
+     `
 
 ## Usage
 
